@@ -53,14 +53,28 @@
     (first x)
     x))
 
+(defn ->html-string [s]
+  ^::html-string [s])
+
+(defn html-string? [x]
+  (-> x meta ::html-string))
+
+(defn unwrap-html-string [x]
+  (if (html-string? x)
+    (first x)
+    x))
 ;;;
 
 (defn- format-options-value [v]
   (cond
     (string? v) (str \" (escape-string v) \")
     (keyword? v) (name v)
-    (coll? v) (if (literal? v)
+    (coll? v) (cond
+                (literal? v)
                 (str "\"" (unwrap-literal v) "\"")
+                (html-string? v)
+                (str "<" (unwrap-html-string v) ">")
+                :else
                 (str "\""
                   (->> v
                     (map format-options-value)
@@ -71,6 +85,9 @@
 
 (defn format-label [label]
   (cond
+    (html-string? label)
+    label
+
     (sequential? label)
     (->> label
       (map #(str "{ " (-> % format-label unwrap-literal) " }"))
